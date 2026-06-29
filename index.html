@@ -677,6 +677,9 @@
             <div class="metric"><span>Next landmark</span><strong id="nextMetric">--</strong></div>
             <div class="metric"><span>Traffic</span><strong id="trafficMetric">--</strong></div>
             <div class="metric"><span>Delay signal</span><strong id="delayMetric">--</strong></div>
+            <div class="metric"><span>Google ETA</span><strong id="googleEtaMetric">--</strong></div>
+            <div class="metric"><span>Weather</span><strong id="weatherMetric">--</strong></div>
+            <div class="metric"><span>AQI</span><strong id="aqiMetric">--</strong></div>
           </div>
         </section>
 
@@ -864,6 +867,10 @@
       trafficScore: 0.15,
       trafficDelayMin: 0,
       trafficSummary: "Flowing",
+      liveConditions: null,
+      liveConditionsStatus: "Waiting",
+      liveConditionsInFlight: false,
+      lastConditionsFetch: 0,
       googleTrafficReady: false,
       googleMap: null,
       googleMarker: null,
@@ -888,6 +895,9 @@
       nextMetric: document.getElementById("nextMetric"),
       trafficMetric: document.getElementById("trafficMetric"),
       delayMetric: document.getElementById("delayMetric"),
+      googleEtaMetric: document.getElementById("googleEtaMetric"),
+      weatherMetric: document.getElementById("weatherMetric"),
+      aqiMetric: document.getElementById("aqiMetric"),
       roadSign: document.getElementById("roadSign"),
       aheadReadout: document.getElementById("aheadReadout"),
       exitCity: document.getElementById("exitCity"),
@@ -1059,6 +1069,45 @@
       state.trafficDelayMin = Math.round(score * score * 34);
     }
 
+    function liveConditionsUrl() {
+      const params = new URLSearchParams({
+        lat: state.position.lat.toFixed(6),
+        lng: state.position.lng.toFixed(6),
+        destLat: route[route.length - 1].lat.toFixed(6),
+        destLng: route[route.length - 1].lng.toFixed(6)
+      });
+      const localStatic = ["127.0.0.1", "localhost"].includes(location.hostname) && location.port === "4188";
+      const base = localStatic ? "http://localhost:3000" : "";
+      return `${base}/api/live-conditions?${params}`;
+    }
+
+    async function fetchLiveConditions(force = false) {
+      const now = Date.now();
+      if (state.liveConditionsInFlight) return;
+      if (!force && now - state.lastConditionsFetch < 120000) return;
+      state.liveConditionsInFlight = true;
+      state.lastConditionsFetch = now;
+
+      try {
+        const response = await fetch(liveConditionsUrl(), { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok || data.error) throw new Error(data.error || `HTTP ${response.status}`);
+        state.liveConditions = data;
+        state.liveConditionsStatus = data.sources?.errors?.length ? "Partial Google data" : "Google live";
+        if (data.traffic?.severity) {
+          const severityScore = { clear: .14, light: .32, moderate: .54, heavy: .78 };
+          state.trafficScore = Math.max(state.trafficScore, severityScore[data.traffic.severity] || state.trafficScore);
+          state.trafficDelayMin = data.traffic.trafficDelayMinutes ?? state.trafficDelayMin;
+        }
+        log(`Google live conditions updated: ${state.liveConditionsStatus}.`);
+      } catch (error) {
+        state.liveConditionsStatus = "Google API unavailable";
+        log(`Google live conditions unavailable: ${error.message}`);
+      } finally {
+        state.liveConditionsInFlight = false;
+      }
+    }
+
     function segmentTrafficScore(mile) {
       const zone = zoneForMile(mile);
       const near = Math.max(0, 1 - Math.abs(mile - state.routeMile) / 24);
@@ -1132,6 +1181,7 @@
       state.source = source;
       updateTrafficModel();
       updateGoogleTrafficMap();
+      fetchLiveConditions();
     }
 
     function nextLandmark() {
@@ -1147,6 +1197,14 @@
       els.nextMetric.textContent = next.name.split(" / ")[0];
       els.trafficMetric.textContent = trafficLabel(state.trafficScore);
       els.delayMetric.textContent = `${state.trafficDelayMin} min`;
+      const live = state.liveConditions;
+      els.googleEtaMetric.textContent = live?.traffic?.durationMinutes ? `${live.traffic.durationMinutes} min` : state.liveConditionsStatus;
+      els.weatherMetric.textContent = live?.weather?.temperatureF != null
+        ? `${Math.round(live.weather.temperatureF)}F ${live.weather.condition}`
+        : "--";
+      els.aqiMetric.textContent = live?.airQuality?.aqi != null
+        ? `${live.airQuality.aqi} ${live.airQuality.category}`
+        : "--";
       const bayConnector = state.routeMile >= route[17].mile;
       els.roadSign.textContent = state.routeMile > route[19].mile ? "I-580 / BAY AREA" : "I-5 NORTH";
       els.exitCity.textContent = next.name.replace(" / ", " ");
@@ -1731,6 +1789,7 @@
       }
 
       updateMetrics();
+      fetchLiveConditions();
       drawFirst(now);
       drawDrone();
       drawOverheadMap();
