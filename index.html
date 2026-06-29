@@ -186,6 +186,17 @@
       display: block;
     }
 
+    #mapWrap.google-pane .cc-frame,
+    #mapWrap.google-pane #mapCanvas {
+      display: none;
+    }
+
+    #mapWrap.google-pane .map-frame {
+      width: 100%;
+      height: 100%;
+      bottom: auto;
+    }
+
     #mapCanvas {
       position: absolute;
       right: 0;
@@ -565,6 +576,27 @@
       background: rgba(255,255,255,.04);
     }
 
+    .advanced-box {
+      margin-top: 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #101415;
+    }
+
+    .advanced-box summary {
+      cursor: pointer;
+      padding: 8px 9px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .advanced-inner {
+      padding: 0 9px 9px;
+    }
+
     .glympse-frame {
       display: block;
       width: 100%;
@@ -719,14 +751,6 @@
         </section>
 
         <section class="panel">
-          <h2>Google Traffic</h2>
-          <label for="googleMapsKey">Optional browser Maps key override</label>
-          <input id="googleMapsKey" type="password" autocomplete="off" placeholder="Usually automatic from Vercel env">
-          <button id="enableGoogleTraffic">Load TrafficLayer</button>
-          <div id="trafficStatus" class="mini-status">Traffic button uses Google Maps when a browser key is available; otherwise the route keeps its trip-specific traffic colors.</div>
-        </section>
-
-        <section class="panel">
           <h2>View Controls</h2>
           <div class="control-stack">
             <label>Visual mode</label>
@@ -742,11 +766,19 @@
             </div>
             <label>Map layers</label>
             <div class="layer-grid">
-              <button id="layerTraffic" class="layer-btn on" data-layer="traffic">TRAFFIC <span class="sw"></span></button>
+              <button id="layerTraffic" class="layer-btn" data-layer="traffic">TRAFFIC <span class="sw"></span></button>
               <button id="layerMilestones" class="layer-btn on" data-layer="milestones">MILESTONES <span class="sw"></span></button>
               <button id="layerIntel" class="layer-btn on" data-layer="intel">ROUTE INTEL <span class="sw"></span></button>
-              <button id="layerGoogle" class="layer-btn" data-layer="google">GOOGLE PANE <span class="sw"></span></button>
             </div>
+            <div id="trafficStatus" class="mini-status">Traffic layer is off. The route still uses trip-speed traffic colors.</div>
+            <details class="advanced-box">
+              <summary>Maps key override</summary>
+              <div class="advanced-inner">
+                <label for="googleMapsKey">Optional browser Maps key</label>
+                <input id="googleMapsKey" type="password" autocomplete="off" placeholder="Usually automatic from Vercel env">
+                <button id="enableGoogleTraffic">Load TrafficLayer</button>
+              </div>
+            </details>
           </div>
           <label for="speedScale">Sim speed</label>
           <input id="speedScale" type="range" min="0.2" max="8" step="0.2" value="2.2">
@@ -904,7 +936,7 @@
       liveConditionsInFlight: false,
       lastConditionsFetch: 0,
       browserConfig: null,
-      trafficLayerWanted: true,
+      trafficLayerWanted: false,
       googleTrafficReady: false,
       googleTrafficLoading: false,
       googleMap: null,
@@ -944,6 +976,7 @@
       mapsLink: document.getElementById("mapsLink"),
       googleMapFrame: document.getElementById("googleMapFrame"),
       googleTrafficMap: document.getElementById("googleTrafficMap"),
+      mapWrap: document.getElementById("mapWrap"),
       trafficStatus: document.getElementById("trafficStatus"),
       caMarkerMetric: document.getElementById("caMarkerMetric"),
       sectionMetric: document.getElementById("sectionMetric"),
@@ -1784,7 +1817,8 @@
 
     function setGooglePaneVisible(on) {
       const googleBtn = document.getElementById("layerGoogle");
-      googleBtn.classList.toggle("on", on);
+      if (googleBtn) googleBtn.classList.toggle("on", on);
+      els.mapWrap.classList.toggle("google-pane", on);
       els.googleMapFrame.style.display = on && !state.googleTrafficReady ? "block" : "none";
       els.googleTrafficMap.style.display = on && state.googleTrafficReady ? "block" : "none";
     }
@@ -1951,18 +1985,12 @@
         setGooglePaneVisible(true);
         enableGoogleTrafficLayer();
       } else {
-        els.googleTrafficMap.style.display = "none";
-        if (document.getElementById("layerGoogle").classList.contains("on")) {
-          els.googleMapFrame.style.display = "block";
-        }
+        setGooglePaneVisible(false);
+        els.trafficStatus.textContent = "Traffic layer is off. The route still uses trip-speed traffic colors.";
       }
     });
     toggleLayerButton("layerMilestones", "hide-milestones", null);
     toggleLayerButton("layerIntel", "hide-intel", null);
-    toggleLayerButton("layerGoogle", null, on => {
-      setGooglePaneVisible(on);
-      if (on && state.trafficLayerWanted) enableGoogleTrafficLayer();
-    });
 
     if (!CanvasRenderingContext2D.prototype.roundRect) {
       CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
