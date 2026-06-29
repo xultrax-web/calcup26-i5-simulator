@@ -143,6 +143,20 @@
       border-bottom: 1px solid var(--line);
     }
 
+    .cc-frame {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #05080c;
+      z-index: 2;
+    }
+
+    .view > .hud {
+      z-index: 4;
+    }
+
     canvas {
       width: 100%;
       height: 100%;
@@ -159,11 +173,13 @@
       height: 100%;
       border: 0;
       background: #d7d0b8;
+      display: none;
+      z-index: 3;
     }
 
     .map-live {
       display: none;
-      z-index: 1;
+      z-index: 3;
     }
 
     .map-live.enabled {
@@ -252,9 +268,70 @@
       margin-bottom: 10px;
     }
 
+    .seg.three {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
     .seg button.active {
       background: #2c5a67;
       border-color: #5aacc3;
+    }
+
+    .control-stack {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .layer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .layer-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 34px;
+      padding: 7px 9px;
+      font-size: 11px;
+      letter-spacing: .5px;
+    }
+
+    .layer-btn .sw {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #667177;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.18);
+      flex: 0 0 auto;
+    }
+
+    .layer-btn.on {
+      border-color: #5aacc3;
+      color: #dff9ff;
+      background: #17343b;
+    }
+
+    .layer-btn.on .sw {
+      background: var(--green);
+      box-shadow: 0 0 10px rgba(119,198,110,.45);
+    }
+
+    body.hide-milestones .rightbar .panel:nth-child(2) {
+      display: none;
+    }
+
+    body.hide-intel .rightbar .panel:first-child {
+      display: none;
+    }
+
+    body.hide-traffic #trafficMetric,
+    body.hide-traffic #delayMetric {
+      color: var(--muted);
     }
 
     label {
@@ -493,9 +570,25 @@
 
         <section class="panel">
           <h2>View Controls</h2>
-          <div class="seg">
-            <button id="viewSplit" class="active">Split</button>
-            <button id="viewFocus">Focus</button>
+          <div class="control-stack">
+            <label>Visual mode</label>
+            <div class="seg three">
+              <button id="focusFirst">First Person</button>
+              <button id="focusDrone">Drone</button>
+              <button id="focusOverhead">Overhead</button>
+            </div>
+            <label>Layout</label>
+            <div class="seg">
+              <button id="viewSplit" class="active">Split Dashboard</button>
+              <button id="viewFocus">Stacked Focus</button>
+            </div>
+            <label>Map layers</label>
+            <div class="layer-grid">
+              <button id="layerTraffic" class="layer-btn on" data-layer="traffic">TRAFFIC <span class="sw"></span></button>
+              <button id="layerMilestones" class="layer-btn on" data-layer="milestones">MILESTONES <span class="sw"></span></button>
+              <button id="layerIntel" class="layer-btn on" data-layer="intel">ROUTE INTEL <span class="sw"></span></button>
+              <button id="layerGoogle" class="layer-btn" data-layer="google">GOOGLE PANE <span class="sw"></span></button>
+            </div>
           </div>
           <label for="speedScale">Sim speed</label>
           <input id="speedScale" type="range" min="0.2" max="8" step="0.2" value="2.2">
@@ -511,6 +604,7 @@
       <section class="stage" id="stage">
         <div class="view" id="firstWrap">
           <canvas id="firstCanvas"></canvas>
+          <iframe class="cc-frame" title="Claude first-person AR engine" src="cc-engine/?embed=first"></iframe>
           <div class="hud">
             <div class="hudbox">
               <div class="hud-title">FIRST PERSON</div>
@@ -525,6 +619,7 @@
 
         <div class="view" id="droneWrap">
           <canvas id="droneCanvas"></canvas>
+          <iframe class="cc-frame" title="Claude drone chase engine" src="cc-engine/?embed=drone"></iframe>
           <div class="hud">
             <div class="hudbox">
               <div class="hud-title">DRONE FOLLOW</div>
@@ -539,6 +634,7 @@
 
         <div class="view" id="mapWrap">
           <canvas id="mapCanvas"></canvas>
+          <iframe class="cc-frame" title="Claude overhead route map" src="cc-engine/?embed=overhead"></iframe>
           <iframe
             id="googleMapFrame"
             class="map-frame"
@@ -1540,11 +1636,52 @@
       document.getElementById("viewSplit").classList.add("active");
       document.getElementById("viewFocus").classList.remove("active");
       els.stage.style.gridTemplateRows = "";
+      document.getElementById("firstWrap").style.display = "";
+      document.getElementById("droneWrap").style.display = "";
+      document.getElementById("mapWrap").style.display = "";
     });
     document.getElementById("viewFocus").addEventListener("click", () => {
       document.getElementById("viewFocus").classList.add("active");
       document.getElementById("viewSplit").classList.remove("active");
       els.stage.style.gridTemplateRows = "minmax(420px, 62vh) minmax(190px, 24vh) minmax(190px, 1fr)";
+      document.getElementById("firstWrap").style.display = "";
+      document.getElementById("droneWrap").style.display = "";
+      document.getElementById("mapWrap").style.display = "";
+    });
+    function focusPane(which) {
+      document.getElementById("viewFocus").classList.add("active");
+      document.getElementById("viewSplit").classList.remove("active");
+      document.getElementById("focusFirst").classList.toggle("active", which === "first");
+      document.getElementById("focusDrone").classList.toggle("active", which === "drone");
+      document.getElementById("focusOverhead").classList.toggle("active", which === "overhead");
+      const panes = ["firstWrap", "droneWrap", "mapWrap"];
+      panes.forEach(id => {
+        document.getElementById(id).style.display =
+          (which === "first" && id === "firstWrap") ||
+          (which === "drone" && id === "droneWrap") ||
+          (which === "overhead" && id === "mapWrap") ? "" : "none";
+      });
+      els.stage.style.gridTemplateRows = "minmax(0, 1fr)";
+    }
+    document.getElementById("focusFirst").addEventListener("click", () => focusPane("first"));
+    document.getElementById("focusDrone").addEventListener("click", () => focusPane("drone"));
+    document.getElementById("focusOverhead").addEventListener("click", () => focusPane("overhead"));
+    function toggleLayerButton(id, className, apply) {
+      const btn = document.getElementById(id);
+      btn.addEventListener("click", () => {
+        const on = !btn.classList.contains("on");
+        btn.classList.toggle("on", on);
+        if (className) document.body.classList.toggle(className, !on);
+        apply && apply(on);
+      });
+    }
+    toggleLayerButton("layerTraffic", "hide-traffic", null);
+    toggleLayerButton("layerMilestones", "hide-milestones", null);
+    toggleLayerButton("layerIntel", "hide-intel", null);
+    toggleLayerButton("layerGoogle", null, on => {
+      document.getElementById("googleMapFrame").style.display = on ? "block" : "none";
+      document.getElementById("googleTrafficMap").style.display =
+        on && state.googleTrafficReady ? "block" : "none";
     });
 
     if (!CanvasRenderingContext2D.prototype.roundRect) {
