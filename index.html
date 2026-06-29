@@ -215,11 +215,11 @@
 
     .exit-sign {
       position: relative;
-      width: min(320px, 34vw);
-      min-width: 260px;
-      filter: drop-shadow(0 8px 18px rgba(0,0,0,.58));
+      width: min(360px, 37vw);
+      min-width: 300px;
+      filter: drop-shadow(0 10px 14px rgba(0,0,0,.48));
       justify-self: end;
-      margin-top: 4px;
+      margin-top: 2px;
       margin-right: 0;
       color: #fff;
       font-family: "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
@@ -227,70 +227,74 @@
 
     .exit-tab {
       position: absolute;
-      right: 18px;
-      top: 0;
+      right: 8px;
+      top: 8px;
       z-index: 2;
-      min-width: 70px;
+      min-width: 92px;
       text-align: center;
-      background: #0a7a35;
+      background: #087535;
       color: #fff;
       font-weight: 800;
-      font-size: 12px;
+      font-size: 13px;
       line-height: 1;
-      padding: 6px 8px 5px;
+      letter-spacing: .04em;
+      padding: 4px 7px 3px;
       border: 2px solid #fff;
-      border-top: 0;
-      border-radius: 0 0 2px 2px;
+      border-radius: 4px;
       white-space: nowrap;
       text-transform: uppercase;
     }
 
     .exit-panel {
       display: grid;
-      grid-template-columns: 1fr 54px;
-      grid-template-rows: auto auto;
-      column-gap: 12px;
-      min-height: 110px;
-      padding: 20px 15px 12px;
-      background: #0a7a35;
-      border-radius: 3px;
-      border: 2px solid #fff;
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto;
+      min-height: 124px;
+      padding: 34px 18px 13px 26px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.04)),
+        #087535;
+      border-radius: 7px;
+      border: 1px solid rgba(255,255,255,.95);
       box-shadow:
-        inset 0 0 0 2px #0a7a35,
-        inset 0 0 0 4px rgba(255,255,255,.94);
+        inset 0 0 0 2px #087535,
+        inset 0 0 0 4px rgba(255,255,255,.9),
+        inset 0 -10px 22px rgba(0,0,0,.08);
+    }
+
+    .exit-cities {
+      align-self: center;
+      min-width: 0;
     }
 
     .exit-city {
       color: #fff;
       font-weight: 800;
-      font-size: 25px;
-      line-height: .96;
-      letter-spacing: 0;
+      font-size: 30px;
+      line-height: 1.02;
+      letter-spacing: .08em;
       white-space: nowrap;
       text-transform: uppercase;
-      text-shadow: 0 1px 0 rgba(0,0,0,.22);
+      text-shadow: 0 1px 1px rgba(0,0,0,.28);
+      max-width: 238px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .exit-city.secondary {
+      margin-top: 5px;
     }
 
     .exit-dist {
       grid-column: 1 / span 2;
       color: #fff;
       font-weight: 800;
-      font-size: 15px;
-      letter-spacing: 0;
+      font-size: 13px;
+      letter-spacing: .08em;
       align-self: end;
-      margin-top: 10px;
+      margin-top: 9px;
       text-transform: uppercase;
-      text-shadow: 0 1px 0 rgba(0,0,0,.22);
-    }
-
-    .exit-arrow {
-      grid-column: 2;
-      grid-row: 1;
-      align-self: center;
-      justify-self: center;
-      width: 46px;
-      height: 46px;
-      flex: 0 0 auto;
+      text-shadow: 0 1px 1px rgba(0,0,0,.24);
     }
 
     .hud-title {
@@ -581,35 +585,35 @@
         grid-template-rows: 48vh 36vh 36vh;
       }
       .exit-sign {
-        width: 190px;
-        min-width: 190px;
+        width: 218px;
+        min-width: 218px;
         margin-top: 2px;
       }
       .exit-panel {
-        grid-template-columns: 1fr 34px;
-        column-gap: 8px;
-        min-height: 76px;
-        padding: 15px 10px 9px;
+        grid-template-columns: 1fr;
+        min-height: 82px;
+        padding: 24px 11px 9px 14px;
       }
       .exit-city {
         font-size: 16px;
-        max-width: 84px;
+        letter-spacing: .05em;
+        max-width: 138px;
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .exit-city.secondary {
+        margin-top: 3px;
+      }
       .exit-tab {
-        right: 12px;
-        min-width: 52px;
-        padding: 5px 6px 4px;
+        right: 7px;
+        top: 6px;
+        min-width: 68px;
+        padding: 4px 5px 3px;
         font-size: 10px;
       }
       .exit-dist {
-        font-size: 10px;
-        margin-top: 6px;
-      }
-      .exit-arrow {
-        width: 30px;
-        height: 30px;
+        font-size: 9px;
+        margin-top: 5px;
       }
       .map-frame {
         width: 100%;
@@ -738,12 +742,9 @@
               <div class="exit-panel">
                 <div class="exit-cities">
                   <div class="exit-city" id="exitCity">--</div>
+                  <div class="exit-city secondary" id="exitCity2">--</div>
                   <div class="exit-dist" id="aheadReadout">-- MILES</div>
                 </div>
-                <svg class="exit-arrow" viewBox="0 0 100 100" aria-hidden="true">
-                  <path d="M22 76 L58 40" stroke="#fff" stroke-width="13" stroke-linecap="square"></path>
-                  <path d="M50 25 H78 V53" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="square" stroke-linejoin="miter"></path>
-                </svg>
               </div>
             </div>
           </div>
@@ -901,6 +902,7 @@
       roadSign: document.getElementById("roadSign"),
       aheadReadout: document.getElementById("aheadReadout"),
       exitCity: document.getElementById("exitCity"),
+      exitCity2: document.getElementById("exitCity2"),
       exitMarker: document.getElementById("exitMarker"),
       locationReadout: document.getElementById("locationReadout"),
       gpsReadout: document.getElementById("gpsReadout"),
@@ -1191,6 +1193,9 @@
     function updateMetrics() {
       const next = nextLandmark();
       const ahead = Math.max(0, next.mile - state.routeMile);
+      const nextIndex = route.indexOf(next);
+      const nextParts = next.name.split(" / ").map(part => part.trim()).filter(Boolean);
+      const secondaryDestination = nextParts[1] || route[Math.min(route.length - 1, nextIndex + 1)]?.name.split(" / ")[0] || "North";
       els.progressMetric.textContent = `${Math.round(state.progress * 100)}%`;
       els.mileMetric.textContent = fmtMiles(state.routeMile);
       els.speedMetric.textContent = state.speedMph ? `${Math.round(state.speedMph)} mph` : "--";
@@ -1207,9 +1212,10 @@
         : "--";
       const bayConnector = state.routeMile >= route[17].mile;
       els.roadSign.textContent = state.routeMile > route[19].mile ? "I-580 / BAY AREA" : "I-5 NORTH";
-      els.exitCity.textContent = next.name.replace(" / ", " ");
+      els.exitCity.textContent = nextParts[0] || next.name;
+      els.exitCity2.textContent = next.kind === "finish" ? "Oakland" : secondaryDestination;
       els.aheadReadout.textContent = `${fmtMiles(ahead)} MILES`;
-      els.exitMarker.textContent = bayConnector ? "EXIT" : "EXIT 446";
+      els.exitMarker.textContent = bayConnector ? "EXIT" : "EXIT 525B";
       els.locationReadout.textContent = currentSegmentName();
       els.gpsReadout.textContent = `${state.position.lat.toFixed(5)}, ${state.position.lng.toFixed(5)}`;
       els.mapReadout.textContent = `Centered near ${state.position.lat.toFixed(4)}, ${state.position.lng.toFixed(4)}`;
