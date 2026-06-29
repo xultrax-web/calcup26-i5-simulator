@@ -215,63 +215,114 @@
 
     .exit-sign {
       position: relative;
-      min-width: 230px;
-      filter: drop-shadow(0 6px 18px rgba(0,0,0,.55));
+      width: min(320px, 34vw);
+      min-width: 260px;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,.58));
       justify-self: end;
-      margin-top: 10px;
-      margin-right: 2px;
+      margin-top: 4px;
+      margin-right: 0;
+      color: #fff;
+      font-family: "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
     }
 
     .exit-tab {
       position: absolute;
-      right: 14px;
-      top: -15px;
+      right: 18px;
+      top: 0;
       z-index: 2;
-      background: #15803d;
+      min-width: 70px;
+      text-align: center;
+      background: #0a7a35;
       color: #fff;
-      font-weight: 700;
-      font-size: 13px;
+      font-weight: 800;
+      font-size: 12px;
       line-height: 1;
-      padding: 5px 10px 4px;
-      border: 3px solid rgba(255,255,255,.95);
-      border-bottom: 0;
-      border-radius: 4px 4px 0 0;
+      padding: 6px 8px 5px;
+      border: 2px solid #fff;
+      border-top: 0;
+      border-radius: 0 0 2px 2px;
       white-space: nowrap;
+      text-transform: uppercase;
     }
 
     .exit-panel {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      min-width: 230px;
-      padding: 14px 16px;
-      background: #15803d;
-      border-radius: 9px;
-      box-shadow: inset 0 0 0 3px rgba(255,255,255,.95);
+      display: grid;
+      grid-template-columns: 64px 1fr 54px;
+      grid-template-rows: auto auto;
+      column-gap: 12px;
+      min-height: 110px;
+      padding: 20px 15px 12px;
+      background: #0a7a35;
+      border-radius: 3px;
+      border: 2px solid #fff;
+      box-shadow:
+        inset 0 0 0 2px #0a7a35,
+        inset 0 0 0 4px rgba(255,255,255,.94);
+    }
+
+    .exit-shield {
+      grid-row: 1 / span 2;
+      align-self: center;
+      justify-self: center;
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 900;
+      font-size: 23px;
+      line-height: 1;
+      letter-spacing: 0;
+      text-shadow: 0 1px 0 rgba(0,0,0,.32);
+      background:
+        linear-gradient(#c2172f 0 31%, #fff 31% 36%, #064490 36% 100%);
+      clip-path: polygon(10% 0, 30% 7%, 50% 9%, 70% 7%, 90% 0, 100% 32%, 96% 62%, 84% 82%, 68% 94%, 50% 100%, 32% 94%, 16% 82%, 4% 62%, 0 32%);
+      box-shadow: 0 0 0 2px #fff;
+    }
+
+    .exit-shield::before {
+      content: "JCT";
+      position: absolute;
+      transform: translateY(-16px);
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: .8px;
+    }
+
+    .exit-shield span {
+      transform: translateY(7px);
     }
 
     .exit-city {
       color: #fff;
-      font-weight: 700;
-      font-size: 27px;
-      line-height: 1.04;
-      letter-spacing: .2px;
+      font-weight: 800;
+      font-size: 25px;
+      line-height: .96;
+      letter-spacing: 0;
       white-space: nowrap;
+      text-transform: uppercase;
+      text-shadow: 0 1px 0 rgba(0,0,0,.22);
     }
 
     .exit-dist {
-      color: rgba(255,255,255,.86);
-      font-weight: 600;
-      font-size: 12px;
-      letter-spacing: 1px;
-      margin-top: 5px;
+      grid-column: 2 / span 2;
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0;
+      align-self: end;
+      margin-top: 10px;
       text-transform: uppercase;
+      text-shadow: 0 1px 0 rgba(0,0,0,.22);
     }
 
     .exit-arrow {
-      width: 52px;
-      height: 52px;
+      grid-column: 3;
+      grid-row: 1;
+      align-self: center;
+      justify-self: center;
+      width: 46px;
+      height: 46px;
       flex: 0 0 auto;
     }
 
@@ -563,23 +614,47 @@
         grid-template-rows: 48vh 36vh 36vh;
       }
       .exit-sign {
-        min-width: 150px;
-        margin-top: 8px;
+        width: 190px;
+        min-width: 190px;
+        margin-top: 2px;
       }
       .exit-panel {
-        min-width: 150px;
-        padding: 11px 12px;
-        gap: 8px;
+        grid-template-columns: 42px 1fr 34px;
+        column-gap: 8px;
+        min-height: 76px;
+        padding: 15px 10px 9px;
       }
       .exit-city {
-        font-size: 18px;
-        max-width: 96px;
+        font-size: 16px;
+        max-width: 84px;
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .exit-tab {
+        right: 12px;
+        min-width: 52px;
+        padding: 5px 6px 4px;
+        font-size: 10px;
+      }
+      .exit-shield {
+        width: 36px;
+        height: 36px;
+        font-size: 15px;
+      }
+      .exit-shield::before {
+        transform: translateY(-11px);
+        font-size: 6px;
+      }
+      .exit-shield span {
+        transform: translateY(5px);
+      }
+      .exit-dist {
+        font-size: 10px;
+        margin-top: 6px;
+      }
       .exit-arrow {
-        width: 34px;
-        height: 34px;
+        width: 30px;
+        height: 30px;
       }
       .map-frame {
         width: 100%;
@@ -703,13 +778,14 @@
             <div class="exit-sign" aria-label="Next freeway guide sign">
               <div class="exit-tab" id="exitMarker">EXIT --</div>
               <div class="exit-panel">
+                <div class="exit-shield" aria-hidden="true"><span id="exitRoute">5</span></div>
                 <div class="exit-cities">
                   <div class="exit-city" id="exitCity">--</div>
                   <div class="exit-dist" id="aheadReadout">-- MILES</div>
                 </div>
                 <svg class="exit-arrow" viewBox="0 0 100 100" aria-hidden="true">
-                  <line x1="26" y1="74" x2="58" y2="42" stroke="#fff" stroke-width="13" stroke-linecap="butt"></line>
-                  <polygon points="76,24 68,54 46,32" fill="#fff"></polygon>
+                  <path d="M22 76 L58 40" stroke="#fff" stroke-width="13" stroke-linecap="square"></path>
+                  <path d="M50 25 H78 V53" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="square" stroke-linejoin="miter"></path>
                 </svg>
               </div>
             </div>
@@ -862,6 +938,7 @@
       aheadReadout: document.getElementById("aheadReadout"),
       exitCity: document.getElementById("exitCity"),
       exitMarker: document.getElementById("exitMarker"),
+      exitRoute: document.getElementById("exitRoute"),
       locationReadout: document.getElementById("locationReadout"),
       gpsReadout: document.getElementById("gpsReadout"),
       mapReadout: document.getElementById("mapReadout"),
@@ -1117,10 +1194,12 @@
       els.nextMetric.textContent = next.name.split(" / ")[0];
       els.trafficMetric.textContent = trafficLabel(state.trafficScore);
       els.delayMetric.textContent = `${state.trafficDelayMin} min`;
+      const bayConnector = state.routeMile >= route[17].mile;
       els.roadSign.textContent = state.routeMile > route[19].mile ? "I-580 / BAY AREA" : "I-5 NORTH";
-      els.exitCity.textContent = next.name;
+      els.exitRoute.textContent = bayConnector ? "580" : "5";
+      els.exitCity.textContent = next.name.replace(" / ", " ");
       els.aheadReadout.textContent = `${fmtMiles(ahead)} MILES`;
-      els.exitMarker.textContent = state.routeMile > route[17].mile ? "EXIT I-580" : `EXIT ~${Math.round(next.mile + 96)}`;
+      els.exitMarker.textContent = bayConnector ? "EXIT" : "EXIT 446";
       els.locationReadout.textContent = currentSegmentName();
       els.gpsReadout.textContent = `${state.position.lat.toFixed(5)}, ${state.position.lng.toFixed(5)}`;
       els.mapReadout.textContent = `Centered near ${state.position.lat.toFixed(4)}, ${state.position.lng.toFixed(4)}`;
