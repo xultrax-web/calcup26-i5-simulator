@@ -213,6 +213,68 @@
       backdrop-filter: blur(4px);
     }
 
+    .exit-sign {
+      position: relative;
+      min-width: 230px;
+      filter: drop-shadow(0 6px 18px rgba(0,0,0,.55));
+      justify-self: end;
+      margin-top: 10px;
+      margin-right: 2px;
+    }
+
+    .exit-tab {
+      position: absolute;
+      right: 14px;
+      top: -15px;
+      z-index: 2;
+      background: #15803d;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 1;
+      padding: 5px 10px 4px;
+      border: 3px solid rgba(255,255,255,.95);
+      border-bottom: 0;
+      border-radius: 4px 4px 0 0;
+      white-space: nowrap;
+    }
+
+    .exit-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-width: 230px;
+      padding: 14px 16px;
+      background: #15803d;
+      border-radius: 9px;
+      box-shadow: inset 0 0 0 3px rgba(255,255,255,.95);
+    }
+
+    .exit-city {
+      color: #fff;
+      font-weight: 700;
+      font-size: 27px;
+      line-height: 1.04;
+      letter-spacing: .2px;
+      white-space: nowrap;
+    }
+
+    .exit-dist {
+      color: rgba(255,255,255,.86);
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 1px;
+      margin-top: 5px;
+      text-transform: uppercase;
+    }
+
+    .exit-arrow {
+      width: 52px;
+      height: 52px;
+      flex: 0 0 auto;
+    }
+
     .hud-title {
       font-size: 12px;
       color: var(--muted);
@@ -500,6 +562,25 @@
       .stage {
         grid-template-rows: 48vh 36vh 36vh;
       }
+      .exit-sign {
+        min-width: 150px;
+        margin-top: 8px;
+      }
+      .exit-panel {
+        min-width: 150px;
+        padding: 11px 12px;
+        gap: 8px;
+      }
+      .exit-city {
+        font-size: 18px;
+        max-width: 96px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .exit-arrow {
+        width: 34px;
+        height: 34px;
+      }
       .map-frame {
         width: 100%;
         height: 58%;
@@ -619,9 +700,18 @@
               <div class="hud-title">FIRST PERSON</div>
               <div class="big" id="roadSign">I-5 NORTH</div>
             </div>
-            <div class="hudbox">
-              <div class="hud-title">AHEAD</div>
-              <div id="aheadReadout">--</div>
+            <div class="exit-sign" aria-label="Next freeway guide sign">
+              <div class="exit-tab" id="exitMarker">EXIT --</div>
+              <div class="exit-panel">
+                <div class="exit-cities">
+                  <div class="exit-city" id="exitCity">--</div>
+                  <div class="exit-dist" id="aheadReadout">-- MILES</div>
+                </div>
+                <svg class="exit-arrow" viewBox="0 0 100 100" aria-hidden="true">
+                  <line x1="26" y1="74" x2="58" y2="42" stroke="#fff" stroke-width="13" stroke-linecap="butt"></line>
+                  <polygon points="76,24 68,54 46,32" fill="#fff"></polygon>
+                </svg>
+              </div>
             </div>
           </div>
         </div>
@@ -770,6 +860,8 @@
       delayMetric: document.getElementById("delayMetric"),
       roadSign: document.getElementById("roadSign"),
       aheadReadout: document.getElementById("aheadReadout"),
+      exitCity: document.getElementById("exitCity"),
+      exitMarker: document.getElementById("exitMarker"),
       locationReadout: document.getElementById("locationReadout"),
       gpsReadout: document.getElementById("gpsReadout"),
       mapReadout: document.getElementById("mapReadout"),
@@ -1026,7 +1118,9 @@
       els.trafficMetric.textContent = trafficLabel(state.trafficScore);
       els.delayMetric.textContent = `${state.trafficDelayMin} min`;
       els.roadSign.textContent = state.routeMile > route[19].mile ? "I-580 / BAY AREA" : "I-5 NORTH";
-      els.aheadReadout.textContent = `${next.name} in ${fmtMiles(ahead)} mi`;
+      els.exitCity.textContent = next.name;
+      els.aheadReadout.textContent = `${fmtMiles(ahead)} MILES`;
+      els.exitMarker.textContent = state.routeMile > route[17].mile ? "EXIT I-580" : `EXIT ~${Math.round(next.mile + 96)}`;
       els.locationReadout.textContent = currentSegmentName();
       els.gpsReadout.textContent = `${state.position.lat.toFixed(5)}, ${state.position.lng.toFixed(5)}`;
       els.mapReadout.textContent = `Centered near ${state.position.lat.toFixed(4)}, ${state.position.lng.toFixed(4)}`;
