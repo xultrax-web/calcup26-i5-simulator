@@ -484,6 +484,15 @@
       main {
         grid-template-columns: 1fr;
       }
+      .stage {
+        order: -2;
+      }
+      aside {
+        order: -1;
+      }
+      .rightbar {
+        order: 0;
+      }
       aside, .rightbar {
         border-right: 0;
         max-height: none;
@@ -1662,6 +1671,7 @@
           (which === "overhead" && id === "mapWrap") ? "" : "none";
       });
       els.stage.style.gridTemplateRows = "minmax(0, 1fr)";
+      els.stage.scrollIntoView({ behavior: "smooth", block: "start" });
     }
     document.getElementById("focusFirst").addEventListener("click", () => focusPane("first"));
     document.getElementById("focusDrone").addEventListener("click", () => focusPane("drone"));
