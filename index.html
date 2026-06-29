@@ -1,0 +1,1566 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CALCUP26 I-5 Drive Simulator</title>
+  <link rel="icon" href="i5-logo.png">
+  <style>
+    :root {
+      --bg: #101213;
+      --panel: #191d1f;
+      --panel2: #22272a;
+      --line: #394247;
+      --text: #f1f4f2;
+      --muted: #aab5b0;
+      --green: #77c66e;
+      --gold: #f2c15b;
+      --blue: #66b8d6;
+      --red: #e96f62;
+      --road: #3b3f42;
+      --road-edge: #d8d1b8;
+      --dash: #f4de7f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      padding: 14px 18px;
+      background: #141719;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,.35));
+    }
+
+    .sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    a, button {
+      color: var(--text);
+    }
+
+    .button, button {
+      border: 1px solid var(--line);
+      background: var(--panel2);
+      border-radius: 6px;
+      padding: 8px 10px;
+      cursor: pointer;
+      text-decoration: none;
+      min-height: 36px;
+    }
+
+    .button.primary, button.primary {
+      background: #23513e;
+      border-color: #438861;
+    }
+
+    .button:hover, button:hover {
+      border-color: var(--muted);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr) 340px;
+      gap: 0;
+      min-height: 0;
+    }
+
+    aside, .rightbar {
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .rightbar {
+      border-right: 0;
+      border-left: 1px solid var(--line);
+    }
+
+    .stage {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: minmax(230px, 42vh) minmax(180px, 28vh) minmax(180px, 1fr);
+      min-height: 0;
+      background: #0e1112;
+    }
+
+    .view {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      border-bottom: 1px solid var(--line);
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #111;
+    }
+
+    .map-frame {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 64%;
+      height: 100%;
+      border: 0;
+      background: #d7d0b8;
+    }
+
+    .map-live {
+      display: none;
+      z-index: 1;
+    }
+
+    .map-live.enabled {
+      display: block;
+    }
+
+    #mapCanvas {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 36%;
+      height: 100%;
+      border-left: 1px solid rgba(0,0,0,.35);
+    }
+
+    .hud {
+      position: absolute;
+      inset: 12px;
+      pointer-events: none;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: start;
+      gap: 10px;
+    }
+
+    .hudbox {
+      background: rgba(14, 17, 18, .78);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 6px;
+      padding: 9px 10px;
+      backdrop-filter: blur(4px);
+    }
+
+    .hud-title {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .big {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .panel {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: #dbe6df;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--red);
+      flex: 0 0 auto;
+    }
+
+    .dot.live { background: var(--green); }
+    .dot.warn { background: var(--gold); }
+
+    .seg {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .seg button.active {
+      background: #2c5a67;
+      border-color: #5aacc3;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    input, select {
+      width: 100%;
+      background: #111516;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 9px;
+      min-height: 36px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .metric {
+      background: #111516;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px;
+      min-height: 68px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .metric strong {
+      font-size: 20px;
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 20px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 5px;
+      bottom: 5px;
+      width: 2px;
+      background: #465055;
+    }
+
+    .stop {
+      position: relative;
+      padding: 8px 0 9px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+
+    .stop::before {
+      content: "";
+      position: absolute;
+      left: -17px;
+      top: 13px;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #667177;
+      border: 1px solid #aeb9bd;
+    }
+
+    .stop.passed::before { background: var(--green); }
+    .stop.next::before { background: var(--gold); }
+
+    .stop-title {
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .stop-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+      line-height: 1.35;
+    }
+
+    .log {
+      font-family: Consolas, Monaco, monospace;
+      font-size: 12px;
+      color: #b9c6be;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      background: #111516;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      max-height: 170px;
+      overflow: auto;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .mini-status {
+      margin-top: 8px;
+      padding: 8px 9px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #111516;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 1080px) {
+      main {
+        grid-template-columns: 280px minmax(0, 1fr);
+      }
+      .rightbar {
+        grid-column: 1 / -1;
+        border-left: 0;
+        border-top: 1px solid var(--line);
+        max-height: 340px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      header {
+        grid-template-columns: 1fr;
+      }
+      .header-actions {
+        justify-content: start;
+      }
+      main {
+        grid-template-columns: 1fr;
+      }
+      aside, .rightbar {
+        border-right: 0;
+        max-height: none;
+      }
+      .stage {
+        grid-template-rows: 48vh 36vh 36vh;
+      }
+      .map-frame {
+        width: 100%;
+        height: 58%;
+        bottom: auto;
+      }
+      #mapCanvas {
+        top: 58%;
+        left: 0;
+        width: 100%;
+        height: 42%;
+        border-left: 0;
+        border-top: 1px solid rgba(0,0,0,.35);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <img class="brand-logo" src="i5-logo.png" alt="California Interstate 5 shield">
+        <div>
+          <h1>CALCUP26 California I-5 Drive Simulator</h1>
+          <div class="sub">Irvine to Alameda, with first-person windshield and third-person drone follow views.</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a class="button" href="https://glympse.com/!calcup26" target="_blank" rel="noopener">Open Glympse</a>
+        <a id="mapsLink" class="button" href="https://www.google.com/maps" target="_blank" rel="noopener">Open Google Maps</a>
+        <button id="pollNow" class="primary">Sync Live Tag</button>
+        <button id="playPause">Pause</button>
+      </div>
+    </header>
+
+    <main>
+      <aside>
+        <section class="panel">
+          <h2>Live Source</h2>
+          <div class="status"><span id="liveDot" class="dot warn"></span><span id="liveText">Preparing live adapter</span></div>
+          <div class="seg">
+            <button id="modeLive" class="active">Live tag</button>
+            <button id="modeSim">Sim drive</button>
+          </div>
+          <div class="row">
+            <div>
+              <label for="manualLat">Manual latitude</label>
+              <input id="manualLat" value="34.639104" inputmode="decimal">
+            </div>
+            <div>
+              <label for="manualLng">Manual longitude</label>
+              <input id="manualLng" value="-118.746817" inputmode="decimal">
+            </div>
+          </div>
+          <button id="applyManual">Apply GPS Point</button>
+          <p class="hint">Live mode polls the public Glympse tag and decodes its latest trail point. Manual GPS is here for browser/CORS failures or an expired tag.</p>
+        </section>
+
+        <section class="panel">
+          <h2>Journey</h2>
+          <div class="metrics">
+            <div class="metric"><span>Trip progress</span><strong id="progressMetric">0%</strong></div>
+            <div class="metric"><span>Route miles</span><strong id="mileMetric">0</strong></div>
+            <div class="metric"><span>Speed</span><strong id="speedMetric">--</strong></div>
+            <div class="metric"><span>Next landmark</span><strong id="nextMetric">--</strong></div>
+            <div class="metric"><span>Traffic</span><strong id="trafficMetric">--</strong></div>
+            <div class="metric"><span>Delay signal</span><strong id="delayMetric">--</strong></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Google Traffic</h2>
+          <label for="googleMapsKey">Maps JavaScript API key</label>
+          <input id="googleMapsKey" type="password" autocomplete="off" placeholder="Optional: paste key to enable TrafficLayer">
+          <button id="enableGoogleTraffic">Enable TrafficLayer</button>
+          <div id="trafficStatus" class="mini-status">No API key loaded. Using live-speed traffic simulation and Google Maps link fallback.</div>
+        </section>
+
+        <section class="panel">
+          <h2>View Controls</h2>
+          <div class="seg">
+            <button id="viewSplit" class="active">Split</button>
+            <button id="viewFocus">Focus</button>
+          </div>
+          <label for="speedScale">Sim speed</label>
+          <input id="speedScale" type="range" min="0.2" max="8" step="0.2" value="2.2">
+          <p class="hint">First person shows the road and signs ahead. Drone mode follows above the vehicle. Overhead map shows the full corridor and links out to Google Maps at the current GPS point.</p>
+        </section>
+
+        <section class="panel">
+          <h2>Adapter Log</h2>
+          <div id="log" class="log"></div>
+        </section>
+      </aside>
+
+      <section class="stage" id="stage">
+        <div class="view" id="firstWrap">
+          <canvas id="firstCanvas"></canvas>
+          <div class="hud">
+            <div class="hudbox">
+              <div class="hud-title">FIRST PERSON</div>
+              <div class="big" id="roadSign">I-5 NORTH</div>
+            </div>
+            <div class="hudbox">
+              <div class="hud-title">AHEAD</div>
+              <div id="aheadReadout">--</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="view" id="droneWrap">
+          <canvas id="droneCanvas"></canvas>
+          <div class="hud">
+            <div class="hudbox">
+              <div class="hud-title">DRONE FOLLOW</div>
+              <div class="big" id="locationReadout">--</div>
+            </div>
+            <div class="hudbox">
+              <div class="hud-title">GPS</div>
+              <div id="gpsReadout">--</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="view" id="mapWrap">
+          <canvas id="mapCanvas"></canvas>
+          <iframe
+            id="googleMapFrame"
+            class="map-frame"
+            title="Google Maps overhead view"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            src="https://www.google.com/maps?q=34.639104,-118.746817&z=9&output=embed"></iframe>
+          <div id="googleTrafficMap" class="map-frame map-live" aria-label="Google traffic map"></div>
+          <div class="hud">
+            <div class="hudbox">
+              <div class="hud-title">OVERHEAD MAP</div>
+              <div class="big">Irvine to Alameda</div>
+            </div>
+            <div class="hudbox">
+              <div class="hud-title">MAP LINK</div>
+              <div id="mapReadout">Google Maps ready</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="rightbar">
+        <div class="panel">
+          <h2>Route Intel</h2>
+          <div class="metrics">
+            <div class="metric"><span>CA I-5 marker</span><strong id="caMarkerMetric">--</strong></div>
+            <div class="metric"><span>Section</span><strong id="sectionMetric">--</strong></div>
+          </div>
+          <div id="intelPanel" class="mini-status">Waiting for route position...</div>
+        </div>
+        <div class="panel">
+          <h2>Landmarks Ahead</h2>
+          <div id="timeline" class="timeline"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const route = [
+      { name: "Irvine", lat: 33.6846, lng: -117.8265, kind: "start", note: "The southern Orange County leg runs on the Santa Ana Freeway before I-5 bends northwest toward Los Angeles.", article: "Santa Ana Freeway" },
+      { name: "Anaheim", lat: 33.8366, lng: -117.9143, kind: "city", note: "Dense Orange County interchanges: Disney-adjacent traffic, SR 57, SR 91, and the Santa Ana Freeway corridor.", article: "Orange County urban section" },
+      { name: "Downtown Los Angeles", lat: 34.0522, lng: -118.2437, kind: "city", note: "I-5 passes the Eastside of Los Angeles and interchanges with the US 101 and I-10 systems before turning north.", article: "Los Angeles freeway web" },
+      { name: "Burbank / San Fernando Valley", lat: 34.1808, lng: -118.3089, kind: "city", note: "The route follows the Golden State Freeway through Glendale, Burbank, and the San Fernando Valley.", article: "Golden State Freeway" },
+      { name: "Santa Clarita", lat: 34.3917, lng: -118.5426, kind: "city", note: "The freeway leaves the Los Angeles Basin and starts the climb toward Castaic and the Tejon corridor.", article: "North Los Angeles County climb" },
+      { name: "Castaic Lake", lat: 34.5002, lng: -118.6230, kind: "landmark", note: "Castaic marks the transition from suburban freeway to mountain approach toward the Grapevine.", article: "Castaic approach" },
+      { name: "Gorman", lat: 34.7968, lng: -118.8520, kind: "landmark", note: "High desert mountain community near the top of the Grapevine approach; weather and grades start to matter here.", article: "Grapevine approach" },
+      { name: "Grapevine / Tejon Pass", lat: 34.8826, lng: -118.9222, kind: "landmark", note: "I-5 crosses Tejon Pass, then drops through the steep Five Mile Grade into the San Joaquin Valley.", article: "Tejon Pass and Five Mile Grade" },
+      { name: "Frazier Park", lat: 34.8228, lng: -118.9448, kind: "landmark", note: "Mountain-side access point near the pass; useful context for snow closures, wind, and grade-driven slow traffic.", article: "Mountain access" },
+      { name: "Wheeler Ridge", lat: 35.0052, lng: -118.9563, kind: "landmark", note: "At the valley floor, Route 99 splits north toward Bakersfield while I-5 continues as the West Side Freeway.", article: "Route 99 split" },
+      { name: "Buttonwillow", lat: 35.4005, lng: -119.4696, kind: "landmark", note: "West Side Freeway service stop area in the San Joaquin Valley, with long agricultural stretches between exits.", article: "West Side Freeway" },
+      { name: "Lost Hills", lat: 35.6161, lng: -119.6943, kind: "landmark", note: "Another key West Side service cluster before the route continues past open farms, canals, and energy infrastructure.", article: "Central Valley services" },
+      { name: "Kettleman City", lat: 36.0083, lng: -119.9607, kind: "city", note: "Major long-haul stop near SR 41 and the midpoint rhythm of the valley drive.", article: "Central Valley crossroads" },
+      { name: "Coalinga", lat: 36.1397, lng: -120.3602, kind: "landmark", note: "The article notes I-5 runs near the California Aqueduct and a major power-line corridor in this west valley stretch.", article: "Aqueduct and power corridor" },
+      { name: "Harris Ranch", lat: 36.2540, lng: -120.2378, kind: "landmark", note: "Recognizable I-5 travel landmark and rest/food cluster on the west side of the San Joaquin Valley.", article: "West Side landmark" },
+      { name: "Los Banos", lat: 37.0583, lng: -120.8499, kind: "city", note: "Northern valley approach where I-5 begins setting up the SR 152 crossing toward the coast and Bay Area.", article: "Northern San Joaquin Valley" },
+      { name: "Santa Nella / SR 152", lat: 37.0977, lng: -121.0160, kind: "city", note: "SR 152 connects west toward Gilroy and passes near San Luis Reservoir; this is a major I-5 decision point.", article: "SR 152 and San Luis Reservoir" },
+      { name: "I-580 Split", lat: 37.4716, lng: -121.1775, kind: "landmark", note: "For Alameda, the practical route leaves I-5 at I-580 near Tracy rather than continuing north to Sacramento.", article: "I-580 Bay Area connector" },
+      { name: "Tracy", lat: 37.7397, lng: -121.4252, kind: "city", note: "I-580 carries the trip over the Altamont corridor toward the East Bay; this is often a traffic-sensitive commuter zone.", article: "Altamont approach" },
+      { name: "Livermore", lat: 37.6819, lng: -121.7680, kind: "city", note: "East Bay valley segment after the I-580 connector; the drive changes from interstate trunk route to Bay Area approach.", article: "East Bay approach" },
+      { name: "Dublin / Pleasanton", lat: 37.7022, lng: -121.9358, kind: "city", note: "Major I-580/I-680 interchange area before the route bends toward Oakland.", article: "East Bay interchange" },
+      { name: "Oakland", lat: 37.8044, lng: -122.2712, kind: "city", note: "Final urban freeway network before crossing into Alameda.", article: "Oakland approach" },
+      { name: "Alameda", lat: 37.7652, lng: -122.2416, kind: "finish", note: "Destination off the I-580/Oakland approach, not directly on I-5; the simulator follows the practical Bay Area connector.", article: "Destination connector" }
+    ];
+
+    const glympse = {
+      tag: "calcup26",
+      token: "",
+      invite: "",
+      apiKey: "0SLq661pXHmqdWgI8Yb1",
+      lastPoll: 0
+    };
+
+    const trafficZones = [
+      { name: "Orange County merge", start: 0, end: 34, base: 0.32 },
+      { name: "Los Angeles basin", start: 34, end: 68, base: 0.52 },
+      { name: "Santa Clarita grade", start: 68, end: 98, base: 0.34 },
+      { name: "Grapevine / Tejon Pass", start: 98, end: 124, base: 0.42 },
+      { name: "Central Valley open road", start: 124, end: 326, base: 0.14 },
+      { name: "Tracy / Altamont Pass", start: 326, end: 382, base: 0.46 },
+      { name: "East Bay approach", start: 382, end: 423, base: 0.55 }
+    ];
+
+    const state = {
+      mode: "live",
+      playing: true,
+      focus: false,
+      lastMapFrameUpdate: 0,
+      progress: 0,
+      simProgress: 0,
+      speedScale: 2.2,
+      source: "boot",
+      position: { lat: 34.639104, lng: -118.746817 },
+      routeMile: 0,
+      speedMph: 0,
+      heading: 0,
+      trafficLevel: "clear",
+      trafficScore: 0.15,
+      trafficDelayMin: 0,
+      trafficSummary: "Flowing",
+      googleTrafficReady: false,
+      googleMap: null,
+      googleMarker: null,
+      lastLiveTime: 0,
+      log: []
+    };
+
+    const first = document.getElementById("firstCanvas");
+    const drone = document.getElementById("droneCanvas");
+    const map = document.getElementById("mapCanvas");
+    const fctx = first.getContext("2d");
+    const dctx = drone.getContext("2d");
+    const mctx = map.getContext("2d");
+    const i5Logo = new Image();
+    i5Logo.src = "i5-logo.png";
+    const els = {
+      liveDot: document.getElementById("liveDot"),
+      liveText: document.getElementById("liveText"),
+      progressMetric: document.getElementById("progressMetric"),
+      mileMetric: document.getElementById("mileMetric"),
+      speedMetric: document.getElementById("speedMetric"),
+      nextMetric: document.getElementById("nextMetric"),
+      trafficMetric: document.getElementById("trafficMetric"),
+      delayMetric: document.getElementById("delayMetric"),
+      roadSign: document.getElementById("roadSign"),
+      aheadReadout: document.getElementById("aheadReadout"),
+      locationReadout: document.getElementById("locationReadout"),
+      gpsReadout: document.getElementById("gpsReadout"),
+      mapReadout: document.getElementById("mapReadout"),
+      mapsLink: document.getElementById("mapsLink"),
+      googleMapFrame: document.getElementById("googleMapFrame"),
+      googleTrafficMap: document.getElementById("googleTrafficMap"),
+      trafficStatus: document.getElementById("trafficStatus"),
+      caMarkerMetric: document.getElementById("caMarkerMetric"),
+      sectionMetric: document.getElementById("sectionMetric"),
+      intelPanel: document.getElementById("intelPanel"),
+      timeline: document.getElementById("timeline"),
+      log: document.getElementById("log"),
+      stage: document.getElementById("stage")
+    };
+
+    function milesBetween(a, b) {
+      const r = 3958.7613;
+      const dLat = (b.lat - a.lat) * Math.PI / 180;
+      const dLng = (b.lng - a.lng) * Math.PI / 180;
+      const la1 = a.lat * Math.PI / 180;
+      const la2 = b.lat * Math.PI / 180;
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2;
+      return 2 * r * Math.asin(Math.sqrt(h));
+    }
+
+    function bearing(a, b) {
+      const y = Math.sin((b.lng - a.lng) * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180);
+      const x = Math.cos(a.lat * Math.PI / 180) * Math.sin(b.lat * Math.PI / 180) -
+        Math.sin(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.cos((b.lng - a.lng) * Math.PI / 180);
+      return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    }
+
+    function projectLocal(p, origin) {
+      const latMiles = (p.lat - origin.lat) * 69.0;
+      const lngMiles = (p.lng - origin.lng) * 69.0 * Math.cos(origin.lat * Math.PI / 180);
+      return { x: lngMiles, y: latMiles };
+    }
+
+    function closestPointOnSegment(p, a, b) {
+      const pp = projectLocal(p, a);
+      const bb = projectLocal(b, a);
+      const len2 = bb.x * bb.x + bb.y * bb.y;
+      const rawT = len2 ? (pp.x * bb.x + pp.y * bb.y) / len2 : 0;
+      const t = Math.max(0, Math.min(1, rawT));
+      const x = bb.x * t;
+      const y = bb.y * t;
+      const dist = Math.hypot(pp.x - x, pp.y - y);
+      return { t, dist };
+    }
+
+    function interpolateRoute(progress) {
+      const target = progress * totalMiles;
+      for (let i = 0; i < route.length - 1; i++) {
+        const a = route[i];
+        const b = route[i + 1];
+        if (target <= b.mile) {
+          const segMiles = b.mile - a.mile || 1;
+          const t = (target - a.mile) / segMiles;
+          return {
+            lat: a.lat + (b.lat - a.lat) * t,
+            lng: a.lng + (b.lng - a.lng) * t,
+            heading: bearing(a, b),
+            index: i
+          };
+        }
+      }
+      return { ...route[route.length - 1], heading: 300, index: route.length - 2 };
+    }
+
+    function projectToRoute(pos) {
+      let best = { mile: 0, dist: Infinity, index: 0, t: 0 };
+      for (let i = 0; i < route.length - 1; i++) {
+        const hit = closestPointOnSegment(pos, route[i], route[i + 1]);
+        const mile = route[i].mile + hit.t * (route[i + 1].mile - route[i].mile);
+        if (hit.dist < best.dist) best = { mile, dist: hit.dist, index: i, t: hit.t };
+      }
+      return best;
+    }
+
+    function fmtMiles(n) {
+      if (!Number.isFinite(n)) return "--";
+      return n < 10 ? n.toFixed(1) : Math.round(n).toString();
+    }
+
+    function log(message) {
+      const stamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      state.log.unshift(`${stamp} ${message}`);
+      state.log = state.log.slice(0, 8);
+      els.log.textContent = state.log.join("\n");
+    }
+
+    for (let i = 0; i < route.length; i++) {
+      route[i].mile = i === 0 ? 0 : route[i - 1].mile + milesBetween(route[i - 1], route[i]);
+    }
+    const totalMiles = route[route.length - 1].mile;
+
+    function resizeCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const ratio = Math.max(1, window.devicePixelRatio || 1);
+      const w = Math.max(1, Math.floor(rect.width * ratio));
+      const h = Math.max(1, Math.floor(rect.height * ratio));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      return { w, h, ratio };
+    }
+
+    function decodeTrail(rows) {
+      if (!Array.isArray(rows) || !rows.length) return null;
+      let cur = rows[0].slice();
+      const points = [];
+      for (let i = 0; i < rows.length; i++) {
+        if (i === 0) cur = rows[i].slice();
+        else cur = cur.map((v, idx) => v + rows[i][idx]);
+        points.push({
+          time: cur[0],
+          lat: cur[1] / 1000000,
+          lng: cur[2] / 1000000,
+          altitude: cur[3],
+          speedRaw: cur[4],
+          headingRaw: cur[5]
+        });
+      }
+      return points;
+    }
+
+    function decodeSpeed(raw) {
+      if (!Number.isFinite(raw)) return 0;
+      if (raw > 220) return raw / 4.47;
+      return raw;
+    }
+
+    function zoneForMile(mile) {
+      return trafficZones.find(z => mile >= z.start && mile <= z.end) || trafficZones[trafficZones.length - 1];
+    }
+
+    function trafficColor(score) {
+      if (score >= .82) return "#d83b32";
+      if (score >= .58) return "#e88926";
+      if (score >= .34) return "#e7c84f";
+      return "#49a85f";
+    }
+
+    function trafficLabel(score) {
+      if (score >= .82) return "Jammed";
+      if (score >= .58) return "Heavy";
+      if (score >= .34) return "Moderate";
+      return "Clear";
+    }
+
+    function updateTrafficModel() {
+      const zone = zoneForMile(state.routeMile);
+      const speed = Number.isFinite(state.speedMph) ? state.speedMph : 65;
+      let speedScore = 0.12;
+      if (speed < 8) speedScore = .92;
+      else if (speed < 22) speedScore = .78;
+      else if (speed < 42) speedScore = .55;
+      else if (speed < 58) speedScore = .32;
+      const timePulse = (Math.sin(Date.now() / 180000 + state.routeMile * .035) + 1) * .07;
+      const score = Math.max(0, Math.min(1, zone.base * .55 + speedScore * .45 + timePulse));
+      state.trafficScore = score;
+      state.trafficLevel = trafficLabel(score).toLowerCase();
+      state.trafficSummary = `${trafficLabel(score)} near ${zone.name}`;
+      state.trafficDelayMin = Math.round(score * score * 34);
+    }
+
+    function segmentTrafficScore(mile) {
+      const zone = zoneForMile(mile);
+      const near = Math.max(0, 1 - Math.abs(mile - state.routeMile) / 24);
+      const liveBoost = state.trafficScore * near * .55;
+      const pulse = (Math.sin(Date.now() / 230000 + mile * .071) + 1) * .06;
+      return Math.max(0, Math.min(1, zone.base * .75 + liveBoost + pulse));
+    }
+
+    async function livePoll() {
+      state.source = "syncing";
+      setLive("warn", "Syncing public Glympse tag");
+      try {
+        if (!glympse.token) {
+          const loginUrl = `https://api.glympse.com/v2/account/login?username=viewer&password=password&api_key=${encodeURIComponent(glympse.apiKey)}`;
+          const loginRes = await fetch(loginUrl);
+          if (!loginRes.ok) throw new Error(`viewer login HTTP ${loginRes.status}`);
+          const login = await loginRes.json();
+          glympse.token = login.response && login.response.access_token;
+          if (!glympse.token) throw new Error("viewer login did not return a token");
+          log("Viewer token acquired.");
+        }
+
+        if (!glympse.invite) {
+          const groupRes = await fetch(`https://api.glympse.com/v2/groups/${glympse.tag}`, {
+            headers: { Authorization: `Bearer ${glympse.token}` }
+          });
+          if (!groupRes.ok) throw new Error(`group HTTP ${groupRes.status}`);
+          const group = await groupRes.json();
+          const member = group.response && group.response.members && group.response.members[0];
+          if (!member || !member.invite) throw new Error("tag has no active invite");
+          glympse.invite = member.invite;
+          log(`Active invite ${glympse.invite} found for !${glympse.tag}.`);
+        }
+
+        const inviteRes = await fetch(`https://api.glympse.com/v2/invites/${glympse.invite}`, {
+          headers: { Authorization: `Bearer ${glympse.token}` }
+        });
+        if (!inviteRes.ok) throw new Error(`invite HTTP ${inviteRes.status}`);
+        const invite = await inviteRes.json();
+        const points = decodeTrail(invite.response && invite.response.location);
+        if (!points || !points.length) throw new Error("invite has no location trail");
+        const last = points[points.length - 1];
+        applyPosition(last.lat, last.lng, decodeSpeed(last.speedRaw), last.headingRaw / 10, "live");
+        state.lastLiveTime = Date.now();
+        glympse.lastPoll = Date.now();
+        setLive("live", `Live: ${points.length} trail samples from !${glympse.tag}`);
+        log(`Live GPS ${last.lat.toFixed(5)}, ${last.lng.toFixed(5)}.`);
+      } catch (err) {
+        setLive("warn", "Live sync unavailable; using local simulator/manual GPS");
+        log(`Live sync failed: ${err.message}`);
+        if (state.mode === "live") {
+          state.source = "fallback";
+        }
+      }
+    }
+
+    function setLive(kind, text) {
+      els.liveDot.className = `dot ${kind === "live" ? "live" : kind === "warn" ? "warn" : ""}`;
+      els.liveText.textContent = text;
+    }
+
+    function applyPosition(lat, lng, speedMph, headingDeg, source) {
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      const projected = projectToRoute({ lat, lng });
+      state.position = { lat, lng };
+      state.routeMile = projected.mile;
+      state.progress = Math.max(0, Math.min(1, projected.mile / totalMiles));
+      const along = interpolateRoute(state.progress);
+      state.heading = Number.isFinite(headingDeg) ? headingDeg : along.heading;
+      state.speedMph = Number.isFinite(speedMph) && speedMph > 0 ? speedMph : 62;
+      state.source = source;
+      updateTrafficModel();
+      updateGoogleTrafficMap();
+    }
+
+    function nextLandmark() {
+      return route.find(p => p.mile > state.routeMile + 0.3) || route[route.length - 1];
+    }
+
+    function updateMetrics() {
+      const next = nextLandmark();
+      const ahead = Math.max(0, next.mile - state.routeMile);
+      els.progressMetric.textContent = `${Math.round(state.progress * 100)}%`;
+      els.mileMetric.textContent = fmtMiles(state.routeMile);
+      els.speedMetric.textContent = state.speedMph ? `${Math.round(state.speedMph)} mph` : "--";
+      els.nextMetric.textContent = next.name.split(" / ")[0];
+      els.trafficMetric.textContent = trafficLabel(state.trafficScore);
+      els.delayMetric.textContent = `${state.trafficDelayMin} min`;
+      els.roadSign.textContent = state.routeMile > route[19].mile ? "I-580 / BAY AREA" : "I-5 NORTH";
+      els.aheadReadout.textContent = `${next.name} in ${fmtMiles(ahead)} mi`;
+      els.locationReadout.textContent = currentSegmentName();
+      els.gpsReadout.textContent = `${state.position.lat.toFixed(5)}, ${state.position.lng.toFixed(5)}`;
+      els.mapReadout.textContent = `Centered near ${state.position.lat.toFixed(4)}, ${state.position.lng.toFixed(4)}`;
+      els.mapsLink.href = `https://www.google.com/maps/search/?api=1&query=${state.position.lat.toFixed(6)},${state.position.lng.toFixed(6)}`;
+      const intel = currentRoutePoint();
+      els.caMarkerMetric.textContent = approxCaI5Marker();
+      els.sectionMetric.textContent = currentSection();
+      els.intelPanel.innerHTML = `<strong>${intel.article}</strong><br>${intel.note}`;
+      if (Date.now() - state.lastMapFrameUpdate > 15000) {
+        state.lastMapFrameUpdate = Date.now();
+        els.googleMapFrame.src = `https://www.google.com/maps?q=${state.position.lat.toFixed(6)},${state.position.lng.toFixed(6)}&z=9&output=embed`;
+      }
+
+      els.timeline.innerHTML = route.map(p => {
+        const delta = p.mile - state.routeMile;
+        const cls = delta < -0.3 ? "passed" : p === next ? "next" : "";
+        const label = delta >= 0 ? `${fmtMiles(delta)} mi ahead` : `${fmtMiles(Math.abs(delta))} mi behind`;
+        const caMarker = p.mile > route[17].mile ? "I-580 connector" : `approx CA I-5 marker ${Math.round(p.mile + 96)}`;
+        return `<div class="stop ${cls}"><div class="stop-title">${p.name}</div><div class="stop-meta">${label}<br>Route mile ${fmtMiles(p.mile)} | ${caMarker}<br>${p.note}</div></div>`;
+      }).join("");
+    }
+
+    function currentSegmentName() {
+      const pos = interpolateRoute(state.progress);
+      return `${route[pos.index].name} to ${route[pos.index + 1].name}`;
+    }
+
+    function currentRoutePoint() {
+      let best = route[0];
+      let bestDist = Infinity;
+      for (const p of route) {
+        const d = Math.abs(p.mile - state.routeMile);
+        if (d < bestDist) {
+          best = p;
+          bestDist = d;
+        }
+      }
+      return best;
+    }
+
+    function currentSection() {
+      if (state.routeMile < route[2].mile) return "Santa Ana Freeway";
+      if (state.routeMile < route[5].mile) return "Golden State Freeway";
+      if (state.routeMile < route[9].mile) return "Grapevine / Tejon";
+      if (state.routeMile < route[17].mile) return "West Side Freeway";
+      if (state.routeMile < route[18].mile) return "I-580 connector";
+      return "East Bay approach";
+    }
+
+    function approxCaI5Marker() {
+      const approx = Math.round(state.routeMile + 96);
+      if (state.routeMile > route[17].mile) return "I-580";
+      return `~${approx}`;
+    }
+
+    function drawFirst(now) {
+      const { w, h } = resizeCanvas(first);
+      const sky = fctx.createLinearGradient(0, 0, 0, h * .48);
+      sky.addColorStop(0, "#78a8bd");
+      sky.addColorStop(1, "#d3c7a1");
+      fctx.fillStyle = sky;
+      fctx.fillRect(0, 0, w, h);
+
+      fctx.fillStyle = "#8c8f6b";
+      const hillShift = (state.progress * 900 + now * 0.006) % w;
+      for (let i = -1; i < 3; i++) {
+        const x = i * w * .58 - hillShift * .25;
+        fctx.beginPath();
+        fctx.moveTo(x, h * .48);
+        fctx.lineTo(x + w * .25, h * .26);
+        fctx.lineTo(x + w * .58, h * .48);
+        fctx.closePath();
+        fctx.fill();
+      }
+
+      fctx.fillStyle = "#b6a06e";
+      fctx.fillRect(0, h * .48, w, h * .52);
+
+      const roadTop = h * .49;
+      fctx.fillStyle = "#34383a";
+      fctx.beginPath();
+      fctx.moveTo(w * .44, roadTop);
+      fctx.lineTo(w * .56, roadTop);
+      fctx.lineTo(w * .88, h);
+      fctx.lineTo(w * .12, h);
+      fctx.closePath();
+      fctx.fill();
+
+      fctx.strokeStyle = "#e9e1c4";
+      fctx.lineWidth = Math.max(3, w * .005);
+      fctx.beginPath();
+      fctx.moveTo(w * .40, roadTop);
+      fctx.lineTo(w * .08, h);
+      fctx.moveTo(w * .60, roadTop);
+      fctx.lineTo(w * .92, h);
+      fctx.stroke();
+
+      const dashOffset = (now * .18 * (state.playing ? 1 : 0)) % 80;
+      fctx.strokeStyle = "#f4de7f";
+      fctx.lineWidth = Math.max(2, w * .0035);
+      for (let i = 0; i < 11; i++) {
+        const z = (i * 80 + dashOffset) / 850;
+        const y1 = roadTop + (h - roadTop) * z;
+        const y2 = roadTop + (h - roadTop) * Math.min(1, z + .045);
+        const half1 = (y1 - roadTop) * .06;
+        const half2 = (y2 - roadTop) * .06;
+        fctx.beginPath();
+        fctx.moveTo(w * .5 - half1, y1);
+        fctx.lineTo(w * .5 - half2, y2);
+        fctx.moveTo(w * .5 + half1, y1);
+        fctx.lineTo(w * .5 + half2, y2);
+        fctx.stroke();
+      }
+
+      const next = nextLandmark();
+      const miles = Math.max(0, next.mile - state.routeMile);
+      drawHighwaySign(w * .68, h * .30, next.name, `${fmtMiles(miles)} MI`);
+      drawHighwayShield(w * .17, h * .23, state.routeMile > route[19].mile ? "580" : "5");
+
+      fctx.fillStyle = "rgba(8, 10, 10, .55)";
+      fctx.fillRect(0, h * .78, w, h * .22);
+      fctx.fillStyle = "#cbd5d0";
+      fctx.font = `${Math.max(12, w * .016)}px Arial`;
+      fctx.fillText(`Route mile ${fmtMiles(state.routeMile)} of ${fmtMiles(totalMiles)}    Heading ${Math.round(state.heading)} deg    Source ${state.source}`, w * .04, h * .91);
+
+      function drawHighwaySign(x, y, title, milesText) {
+        const sw = Math.max(132, w * .19);
+        const sh = Math.max(66, h * .13);
+        fctx.fillStyle = "#1f6f44";
+        fctx.strokeStyle = "#dfe9df";
+        fctx.lineWidth = 3;
+        roundRect(fctx, x, y, sw, sh, 5);
+        fctx.fill();
+        fctx.stroke();
+        fctx.fillStyle = "#fff";
+        fctx.textAlign = "center";
+        fctx.font = `700 ${Math.max(13, sw * .105)}px Arial`;
+        fctx.fillText(title, x + sw / 2, y + sh * .42, sw - 14);
+        fctx.font = `${Math.max(12, sw * .09)}px Arial`;
+        fctx.fillText(milesText, x + sw / 2, y + sh * .72, sw - 14);
+        fctx.textAlign = "left";
+      }
+
+      function drawHighwayShield(x, y, num) {
+        const size = Math.max(82, w * .11);
+        if (i5Logo.complete && i5Logo.naturalWidth) {
+          const shieldH = size;
+          const shieldW = shieldH * (i5Logo.naturalWidth / i5Logo.naturalHeight);
+          fctx.save();
+          fctx.shadowColor = "rgba(0,0,0,.35)";
+          fctx.shadowBlur = 7;
+          fctx.shadowOffsetY = 3;
+          fctx.drawImage(i5Logo, x, y, shieldW, shieldH);
+          fctx.restore();
+          return;
+        }
+        const shieldW = size;
+        const shieldH = size * 1.08;
+        const pts = [
+          [0.10, 0.08], [0.90, 0.08], [0.94, 0.15], [0.94, 0.48],
+          [0.83, 0.70], [0.50, 0.96], [0.17, 0.70], [0.06, 0.48], [0.06, 0.15]
+        ];
+        const path = (scale, ox, oy) => {
+          fctx.beginPath();
+          pts.forEach(([px, py], i) => {
+            const sx = x + ox + px * shieldW * scale;
+            const sy = y + oy + py * shieldH * scale;
+            if (i === 0) fctx.moveTo(sx, sy);
+            else fctx.lineTo(sx, sy);
+          });
+          fctx.closePath();
+        };
+
+        fctx.save();
+        fctx.shadowColor = "rgba(0,0,0,.35)";
+        fctx.shadowBlur = 7;
+        fctx.shadowOffsetY = 3;
+        path(1, 0, 0);
+        fctx.fillStyle = "#f7f7f2";
+        fctx.fill();
+        fctx.shadowColor = "transparent";
+
+        const inset = shieldW * .055;
+        path(.89, inset, shieldH * .045);
+        fctx.fillStyle = "#c82032";
+        fctx.fill();
+
+        fctx.save();
+        path(.89, inset, shieldH * .045);
+        fctx.clip();
+        fctx.fillStyle = "#174a9b";
+        fctx.fillRect(x + shieldW * .10, y + shieldH * .32, shieldW * .80, shieldH * .58);
+        fctx.fillStyle = "#f7f7f2";
+        fctx.fillRect(x + shieldW * .11, y + shieldH * .29, shieldW * .78, shieldH * .055);
+        fctx.restore();
+
+        path(1, 0, 0);
+        fctx.strokeStyle = "#f7f7f2";
+        fctx.lineWidth = Math.max(3, shieldW * .035);
+        fctx.stroke();
+
+        fctx.fillStyle = "#fff";
+        fctx.textAlign = "center";
+        fctx.textBaseline = "middle";
+        fctx.font = `700 ${shieldW * (num.length > 2 ? .31 : .43)}px Arial`;
+        fctx.fillText(num, x + shieldW / 2, y + shieldH * .62);
+        fctx.font = `700 ${shieldW * .14}px Arial`;
+        fctx.fillText("INTERSTATE", x + shieldW / 2, y + shieldH * .235, shieldW * .74);
+        fctx.textAlign = "left";
+        fctx.textBaseline = "alphabetic";
+        fctx.restore();
+      }
+
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+    }
+
+    function drawDrone() {
+      const { w, h } = resizeCanvas(drone);
+      dctx.fillStyle = "#182022";
+      dctx.fillRect(0, 0, w, h);
+
+      const current = interpolateRoute(state.progress);
+      const center = projectLocal(current, route[0]);
+      const scale = Math.min(w, h) / 125;
+
+      function screen(p) {
+        const lp = projectLocal(p, route[0]);
+        return {
+          x: w / 2 + (lp.x - center.x) * scale,
+          y: h / 2 - (lp.y - center.y) * scale
+        };
+      }
+
+      dctx.strokeStyle = "rgba(255,255,255,.08)";
+      dctx.lineWidth = 1;
+      for (let gx = -w; gx < w * 2; gx += scale * 10) {
+        dctx.beginPath();
+        dctx.moveTo(gx, 0);
+        dctx.lineTo(gx, h);
+        dctx.stroke();
+      }
+      for (let gy = -h; gy < h * 2; gy += scale * 10) {
+        dctx.beginPath();
+        dctx.moveTo(0, gy);
+        dctx.lineTo(w, gy);
+        dctx.stroke();
+      }
+
+      dctx.lineCap = "round";
+      dctx.lineJoin = "round";
+      dctx.strokeStyle = "#212529";
+      dctx.lineWidth = 18;
+      dctx.beginPath();
+      route.forEach((p, i) => {
+        const s = screen(p);
+        if (i === 0) dctx.moveTo(s.x, s.y);
+        else dctx.lineTo(s.x, s.y);
+      });
+      dctx.stroke();
+
+      dctx.strokeStyle = "#d9d0b7";
+      dctx.lineWidth = 3;
+      dctx.beginPath();
+      route.forEach((p, i) => {
+        const s = screen(p);
+        if (i === 0) dctx.moveTo(s.x, s.y);
+        else dctx.lineTo(s.x, s.y);
+      });
+      dctx.stroke();
+
+      dctx.lineWidth = 7;
+      for (let i = 0; i < route.length - 1; i++) {
+        const a = screen(route[i]);
+        const b = screen(route[i + 1]);
+        const mile = (route[i].mile + route[i + 1].mile) / 2;
+        dctx.strokeStyle = trafficColor(segmentTrafficScore(mile));
+        dctx.beginPath();
+        dctx.moveTo(a.x, a.y);
+        dctx.lineTo(b.x, b.y);
+        dctx.stroke();
+      }
+
+      dctx.strokeStyle = "#77c66e";
+      dctx.lineWidth = 8;
+      dctx.beginPath();
+      let started = false;
+      for (let i = 0; i < route.length; i++) {
+        const p = route[i];
+        if (p.mile <= state.routeMile) {
+          const s = screen(p);
+          if (!started) {
+            dctx.moveTo(s.x, s.y);
+            started = true;
+          } else dctx.lineTo(s.x, s.y);
+        } else {
+          const currS = screen(current);
+          if (!started) dctx.moveTo(currS.x, currS.y);
+          dctx.lineTo(currS.x, currS.y);
+          break;
+        }
+      }
+      dctx.stroke();
+
+      route.forEach(p => {
+        const s = screen(p);
+        if (s.x < -60 || s.x > w + 60 || s.y < -40 || s.y > h + 40) return;
+        dctx.fillStyle = p.mile <= state.routeMile ? "#77c66e" : p.kind === "landmark" ? "#f2c15b" : "#66b8d6";
+        dctx.beginPath();
+        dctx.arc(s.x, s.y, p.kind === "landmark" ? 5 : 4, 0, Math.PI * 2);
+        dctx.fill();
+        dctx.fillStyle = "#dfe8e2";
+        dctx.font = "12px Arial";
+        dctx.fillText(p.name, s.x + 8, s.y - 7);
+      });
+
+      const c = screen(current);
+      dctx.save();
+      dctx.translate(c.x, c.y);
+      dctx.rotate((current.heading - 90) * Math.PI / 180);
+      dctx.fillStyle = "#f0f3ef";
+      dctx.strokeStyle = "#101213";
+      dctx.lineWidth = 2;
+      dctx.beginPath();
+      dctx.moveTo(15, 0);
+      dctx.lineTo(-11, -8);
+      dctx.lineTo(-7, 0);
+      dctx.lineTo(-11, 8);
+      dctx.closePath();
+      dctx.fill();
+      dctx.stroke();
+      dctx.restore();
+
+      dctx.strokeStyle = "rgba(102,184,214,.55)";
+      dctx.lineWidth = 2;
+      dctx.beginPath();
+      dctx.arc(c.x, c.y, 58 + Math.sin(performance.now() / 400) * 6, 0, Math.PI * 2);
+      dctx.stroke();
+    }
+
+    function drawOverheadMap() {
+      const { w, h } = resizeCanvas(map);
+      mctx.fillStyle = "#d7d0b8";
+      mctx.fillRect(0, 0, w, h);
+
+      const minLat = Math.min(...route.map(p => p.lat)) - .18;
+      const maxLat = Math.max(...route.map(p => p.lat)) + .18;
+      const minLng = Math.min(...route.map(p => p.lng)) - .18;
+      const maxLng = Math.max(...route.map(p => p.lng)) + .18;
+      const pad = Math.min(w, h) * .08;
+
+      function screenGeo(p) {
+        const x = pad + ((p.lng - minLng) / (maxLng - minLng)) * (w - pad * 2);
+        const y = h - pad - ((p.lat - minLat) / (maxLat - minLat)) * (h - pad * 2);
+        return { x, y };
+      }
+
+      mctx.fillStyle = "#b9cba8";
+      mctx.fillRect(0, 0, w, h * .28);
+      mctx.fillStyle = "#c4b47d";
+      mctx.fillRect(0, h * .42, w, h * .58);
+      mctx.fillStyle = "rgba(88, 121, 141, .35)";
+      mctx.beginPath();
+      mctx.ellipse(w * .83, h * .32, w * .12, h * .18, -.3, 0, Math.PI * 2);
+      mctx.fill();
+
+      mctx.strokeStyle = "rgba(70, 80, 85, .25)";
+      mctx.lineWidth = 1;
+      for (let x = pad; x < w - pad; x += (w - pad * 2) / 7) {
+        mctx.beginPath();
+        mctx.moveTo(x, pad);
+        mctx.lineTo(x, h - pad);
+        mctx.stroke();
+      }
+      for (let y = pad; y < h - pad; y += (h - pad * 2) / 5) {
+        mctx.beginPath();
+        mctx.moveTo(pad, y);
+        mctx.lineTo(w - pad, y);
+        mctx.stroke();
+      }
+
+      mctx.lineCap = "round";
+      mctx.lineJoin = "round";
+      mctx.strokeStyle = "#34383a";
+      mctx.lineWidth = Math.max(9, Math.min(w, h) * .024);
+      mctx.beginPath();
+      route.forEach((p, i) => {
+        const s = screenGeo(p);
+        if (i === 0) mctx.moveTo(s.x, s.y);
+        else mctx.lineTo(s.x, s.y);
+      });
+      mctx.stroke();
+
+      mctx.strokeStyle = "#f4de7f";
+      mctx.lineWidth = Math.max(2, Math.min(w, h) * .006);
+      mctx.setLineDash([10, 10]);
+      mctx.beginPath();
+      route.forEach((p, i) => {
+        const s = screenGeo(p);
+        if (i === 0) mctx.moveTo(s.x, s.y);
+        else mctx.lineTo(s.x, s.y);
+      });
+      mctx.stroke();
+      mctx.setLineDash([]);
+
+      mctx.lineWidth = Math.max(5, Math.min(w, h) * .013);
+      for (let i = 0; i < route.length - 1; i++) {
+        const a = screenGeo(route[i]);
+        const b = screenGeo(route[i + 1]);
+        const mile = (route[i].mile + route[i + 1].mile) / 2;
+        mctx.strokeStyle = trafficColor(segmentTrafficScore(mile));
+        mctx.beginPath();
+        mctx.moveTo(a.x, a.y);
+        mctx.lineTo(b.x, b.y);
+        mctx.stroke();
+      }
+
+      const current = interpolateRoute(state.progress);
+      const routePoints = [];
+      for (const p of route) {
+        routePoints.push(p);
+        if (p.mile > state.routeMile) break;
+      }
+      routePoints[routePoints.length - 1] = current;
+      mctx.strokeStyle = "#278c52";
+      mctx.lineWidth = Math.max(6, Math.min(w, h) * .015);
+      mctx.beginPath();
+      routePoints.forEach((p, i) => {
+        const s = screenGeo(p);
+        if (i === 0) mctx.moveTo(s.x, s.y);
+        else mctx.lineTo(s.x, s.y);
+      });
+      mctx.stroke();
+
+      route.forEach(p => {
+        const s = screenGeo(p);
+        mctx.fillStyle = p.mile <= state.routeMile ? "#278c52" : p.kind === "landmark" ? "#a06416" : "#256c86";
+        mctx.beginPath();
+        mctx.arc(s.x, s.y, p.kind === "landmark" ? 5 : 4, 0, Math.PI * 2);
+        mctx.fill();
+        if (p.kind !== "city" || ["Irvine", "Los Angeles", "Tracy", "Oakland", "Alameda"].some(n => p.name.includes(n))) {
+          mctx.fillStyle = "#1c2021";
+          mctx.font = `${Math.max(10, Math.min(w, h) * .023)}px Arial`;
+          mctx.fillText(p.name, s.x + 7, s.y - 6);
+        }
+      });
+
+      [
+        { label: "Tejon Pass / Five Mile Grade", at: "Grapevine / Tejon Pass" },
+        { label: "Route 99 splits to Bakersfield", at: "Wheeler Ridge" },
+        { label: "West Side Freeway", at: "Coalinga" },
+        { label: "SR 152 / San Luis Reservoir corridor", at: "Santa Nella / SR 152" },
+        { label: "Leave I-5 for I-580 to Alameda", at: "I-580 Split" }
+      ].forEach(callout => {
+        const p = route.find(item => item.name === callout.at);
+        if (!p) return;
+        const s = screenGeo(p);
+        mctx.fillStyle = "rgba(255,255,255,.86)";
+        const labelW = Math.min(w * .46, Math.max(150, callout.label.length * 6.7));
+        roundRect(mctx, Math.min(s.x + 12, w - labelW - 8), s.y + 10, labelW, 24, 5);
+        mctx.fill();
+        mctx.fillStyle = "#1c2021";
+        mctx.font = "12px Arial";
+        mctx.fillText(callout.label, Math.min(s.x + 20, w - labelW), s.y + 26, labelW - 12);
+      });
+
+      const car = screenGeo(current);
+      mctx.fillStyle = "#ffffff";
+      mctx.strokeStyle = "#101213";
+      mctx.lineWidth = 2;
+      mctx.beginPath();
+      mctx.arc(car.x, car.y, 9, 0, Math.PI * 2);
+      mctx.fill();
+      mctx.stroke();
+      mctx.fillStyle = "#e96f62";
+      mctx.beginPath();
+      mctx.arc(car.x, car.y, 4, 0, Math.PI * 2);
+      mctx.fill();
+
+      mctx.fillStyle = "rgba(255,255,255,.82)";
+      roundRect(mctx, pad, h - pad - 36, 150, 28, 5);
+      mctx.fill();
+      mctx.fillStyle = "#1c2021";
+      mctx.font = "12px Arial";
+      mctx.fillText("Google-style overhead view", pad + 10, h - pad - 18);
+    }
+
+    function updateGoogleTrafficMap() {
+      if (!state.googleTrafficReady || !state.googleMap || !window.google) return;
+      const pos = { lat: state.position.lat, lng: state.position.lng };
+      state.googleMap.setCenter(pos);
+      if (state.googleMarker) {
+        state.googleMarker.setPosition(pos);
+      } else {
+        state.googleMarker = new google.maps.Marker({
+          position: pos,
+          map: state.googleMap,
+          title: "Live Glympse position"
+        });
+      }
+    }
+
+    function enableGoogleTrafficLayer() {
+      const key = document.getElementById("googleMapsKey").value.trim();
+      if (!key) {
+        els.trafficStatus.textContent = "Paste a Google Maps JavaScript API key to enable the real TrafficLayer. The simulator traffic model is active now.";
+        log("Google TrafficLayer needs a Maps JavaScript API key.");
+        return;
+      }
+      els.trafficStatus.textContent = "Loading Google Maps TrafficLayer...";
+      window.__initCalcupTraffic = () => {
+        const pos = { lat: state.position.lat, lng: state.position.lng };
+        state.googleMap = new google.maps.Map(els.googleTrafficMap, {
+          center: pos,
+          zoom: 9,
+          mapTypeId: "roadmap",
+          disableDefaultUI: true,
+          zoomControl: true,
+          gestureHandling: "greedy"
+        });
+        const trafficLayer = new google.maps.TrafficLayer({ autoRefresh: true });
+        trafficLayer.setMap(state.googleMap);
+        state.googleTrafficReady = true;
+        els.googleTrafficMap.classList.add("enabled");
+        els.googleMapFrame.style.display = "none";
+        els.trafficStatus.textContent = "Google TrafficLayer enabled. Simulator route colors still use live Glympse speed as the trip-specific traffic signal.";
+        updateGoogleTrafficMap();
+        log("Google TrafficLayer enabled.");
+      };
+
+      if (window.google && window.google.maps) {
+        window.__initCalcupTraffic();
+        return;
+      }
+      const existing = document.getElementById("googleMapsApiScript");
+      if (existing) {
+        els.trafficStatus.textContent = "Google Maps script is already loading.";
+        return;
+      }
+      const script = document.createElement("script");
+      script.id = "googleMapsApiScript";
+      script.async = true;
+      script.defer = true;
+      script.onerror = () => {
+        els.trafficStatus.textContent = "Google Maps script failed to load. Check the API key, billing, and Maps JavaScript API access.";
+        log("Google Maps TrafficLayer script failed to load.");
+      };
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&callback=__initCalcupTraffic`;
+      document.head.appendChild(script);
+    }
+
+    let lastFrame = performance.now();
+    function frame(now) {
+      const dt = Math.min(0.05, (now - lastFrame) / 1000);
+      lastFrame = now;
+
+      if (state.mode === "sim" && state.playing) {
+        state.simProgress = (state.simProgress + dt * 0.0035 * state.speedScale) % 1;
+        const pos = interpolateRoute(state.simProgress);
+        applyPosition(pos.lat, pos.lng, 70, pos.heading, "simulated");
+      }
+
+      if (state.mode === "live" && state.playing && Date.now() - state.lastLiveTime > 45000) {
+        const nudge = interpolateRoute(Math.min(1, state.progress + dt * 0.00045));
+        if (state.source !== "live") applyPosition(nudge.lat, nudge.lng, 62, nudge.heading, "fallback drift");
+      }
+
+      updateMetrics();
+      drawFirst(now);
+      drawDrone();
+      drawOverheadMap();
+      requestAnimationFrame(frame);
+    }
+
+    document.getElementById("pollNow").addEventListener("click", livePoll);
+    document.getElementById("playPause").addEventListener("click", e => {
+      state.playing = !state.playing;
+      e.currentTarget.textContent = state.playing ? "Pause" : "Resume";
+    });
+    document.getElementById("modeLive").addEventListener("click", e => {
+      state.mode = "live";
+      document.getElementById("modeLive").classList.add("active");
+      document.getElementById("modeSim").classList.remove("active");
+      livePoll();
+    });
+    document.getElementById("modeSim").addEventListener("click", e => {
+      state.mode = "sim";
+      state.simProgress = state.progress;
+      document.getElementById("modeSim").classList.add("active");
+      document.getElementById("modeLive").classList.remove("active");
+      setLive("warn", "Local simulated drive mode");
+      log("Switched to local drive simulation.");
+    });
+    document.getElementById("applyManual").addEventListener("click", () => {
+      const lat = Number(document.getElementById("manualLat").value);
+      const lng = Number(document.getElementById("manualLng").value);
+      applyPosition(lat, lng, 62, null, "manual GPS");
+      log(`Manual GPS applied: ${lat.toFixed(5)}, ${lng.toFixed(5)}.`);
+    });
+    document.getElementById("enableGoogleTraffic").addEventListener("click", enableGoogleTrafficLayer);
+    document.getElementById("speedScale").addEventListener("input", e => {
+      state.speedScale = Number(e.target.value);
+    });
+    document.getElementById("viewSplit").addEventListener("click", () => {
+      document.getElementById("viewSplit").classList.add("active");
+      document.getElementById("viewFocus").classList.remove("active");
+      els.stage.style.gridTemplateRows = "";
+    });
+    document.getElementById("viewFocus").addEventListener("click", () => {
+      document.getElementById("viewFocus").classList.add("active");
+      document.getElementById("viewSplit").classList.remove("active");
+      els.stage.style.gridTemplateRows = "minmax(420px, 62vh) minmax(190px, 24vh) minmax(190px, 1fr)";
+    });
+
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        roundRect(this, x, y, w, h, r);
+        return this;
+      };
+    }
+
+    log("Simulator loaded.");
+    applyPosition(state.position.lat, state.position.lng, 62, null, "startup");
+    livePoll();
+    setInterval(() => {
+      if (state.mode === "live") livePoll();
+    }, 30000);
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
