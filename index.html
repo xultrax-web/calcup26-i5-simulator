@@ -546,6 +546,33 @@
       line-height: 1.35;
     }
 
+    .glympse-box {
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #0b0f10;
+    }
+
+    .glympse-box summary {
+      cursor: pointer;
+      padding: 8px 10px;
+      color: var(--text);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,.04);
+    }
+
+    .glympse-frame {
+      display: block;
+      width: 100%;
+      height: 220px;
+      border: 0;
+      background: #05080c;
+    }
+
     @media (max-width: 1080px) {
       main {
         grid-template-columns: 280px minmax(0, 1fr);
@@ -669,6 +696,10 @@
             </div>
           </div>
           <button id="applyManual">Apply GPS Point</button>
+          <details class="glympse-box">
+            <summary>Glympse !calcup26 source</summary>
+            <iframe id="glympseFrame" class="glympse-frame" title="Glympse public tag calcup26" src="https://glympse.com/!calcup26" loading="lazy"></iframe>
+          </details>
           <p class="hint">Live mode polls the public Glympse tag and decodes its latest trail point. Manual GPS is here for browser/CORS failures or an expired tag.</p>
         </section>
 
@@ -689,10 +720,10 @@
 
         <section class="panel">
           <h2>Google Traffic</h2>
-          <label for="googleMapsKey">Maps JavaScript API key</label>
-          <input id="googleMapsKey" type="password" autocomplete="off" placeholder="Optional: paste key to enable TrafficLayer">
-          <button id="enableGoogleTraffic">Enable TrafficLayer</button>
-          <div id="trafficStatus" class="mini-status">No API key loaded. Using live-speed traffic simulation and Google Maps link fallback.</div>
+          <label for="googleMapsKey">Optional browser Maps key override</label>
+          <input id="googleMapsKey" type="password" autocomplete="off" placeholder="Usually automatic from Vercel env">
+          <button id="enableGoogleTraffic">Load TrafficLayer</button>
+          <div id="trafficStatus" class="mini-status">Traffic button uses Google Maps when a browser key is available; otherwise the route keeps its trip-specific traffic colors.</div>
         </section>
 
         <section class="panel">
@@ -872,7 +903,10 @@
       liveConditionsStatus: "Waiting",
       liveConditionsInFlight: false,
       lastConditionsFetch: 0,
+      browserConfig: null,
+      trafficLayerWanted: true,
       googleTrafficReady: false,
+      googleTrafficLoading: false,
       googleMap: null,
       googleMarker: null,
       lastLiveTime: 0,
@@ -1078,9 +1112,7 @@
         destLat: route[route.length - 1].lat.toFixed(6),
         destLng: route[route.length - 1].lng.toFixed(6)
       });
-      const localStatic = ["127.0.0.1", "localhost"].includes(location.hostname) && location.port === "4188";
-      const base = localStatic ? "http://localhost:3000" : "";
-      return `${base}/api/live-conditions?${params}`;
+      return `${apiBase()}/api/live-conditions?${params}`;
     }
 
     async function fetchLiveConditions(force = false) {
@@ -1107,6 +1139,27 @@
         log(`Google live conditions unavailable: ${error.message}`);
       } finally {
         state.liveConditionsInFlight = false;
+      }
+    }
+
+    function apiBase() {
+      return ["127.0.0.1", "localhost"].includes(location.hostname) && location.port === "4188"
+        ? "http://localhost:3000"
+        : "";
+    }
+
+    async function fetchBrowserConfig() {
+      if (state.browserConfig) return state.browserConfig;
+      try {
+        const response = await fetch(`${apiBase()}/api/browser-config`, { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok || data.error) throw new Error(data.error || `HTTP ${response.status}`);
+        state.browserConfig = data;
+        return data;
+      } catch (error) {
+        state.browserConfig = {};
+        log(`Browser config unavailable: ${error.message}`);
+        return state.browserConfig;
       }
     }
 
@@ -1729,13 +1782,28 @@
       }
     }
 
-    function enableGoogleTrafficLayer() {
-      const key = document.getElementById("googleMapsKey").value.trim();
+    function setGooglePaneVisible(on) {
+      const googleBtn = document.getElementById("layerGoogle");
+      googleBtn.classList.toggle("on", on);
+      els.googleMapFrame.style.display = on && !state.googleTrafficReady ? "block" : "none";
+      els.googleTrafficMap.style.display = on && state.googleTrafficReady ? "block" : "none";
+    }
+
+    async function enableGoogleTrafficLayer() {
+      const config = await fetchBrowserConfig();
+      const key = document.getElementById("googleMapsKey").value.trim() || config.mapsBrowserKey || "";
       if (!key) {
-        els.trafficStatus.textContent = "Paste a Google Maps JavaScript API key to enable the real TrafficLayer. The simulator traffic model is active now.";
-        log("Google TrafficLayer needs a Maps JavaScript API key.");
+        els.trafficStatus.textContent = "No browser Maps key found. Traffic button is showing the simulator's route traffic colors only.";
+        log("Google TrafficLayer needs a browser Maps JavaScript API key.");
         return;
       }
+      if (state.googleTrafficReady) {
+        setGooglePaneVisible(state.trafficLayerWanted);
+        updateGoogleTrafficMap();
+        return;
+      }
+      if (state.googleTrafficLoading) return;
+      state.googleTrafficLoading = true;
       els.trafficStatus.textContent = "Loading Google Maps TrafficLayer...";
       window.__initCalcupTraffic = () => {
         const pos = { lat: state.position.lat, lng: state.position.lng };
@@ -1750,9 +1818,10 @@
         const trafficLayer = new google.maps.TrafficLayer({ autoRefresh: true });
         trafficLayer.setMap(state.googleMap);
         state.googleTrafficReady = true;
+        state.googleTrafficLoading = false;
         els.googleTrafficMap.classList.add("enabled");
-        els.googleMapFrame.style.display = "none";
-        els.trafficStatus.textContent = "Google TrafficLayer enabled. Simulator route colors still use live Glympse speed as the trip-specific traffic signal.";
+        setGooglePaneVisible(state.trafficLayerWanted);
+        els.trafficStatus.textContent = "Google TrafficLayer enabled in the overhead pane.";
         updateGoogleTrafficMap();
         log("Google TrafficLayer enabled.");
       };
@@ -1771,6 +1840,7 @@
       script.async = true;
       script.defer = true;
       script.onerror = () => {
+        state.googleTrafficLoading = false;
         els.trafficStatus.textContent = "Google Maps script failed to load. Check the API key, billing, and Maps JavaScript API access.";
         log("Google Maps TrafficLayer script failed to load.");
       };
@@ -1875,13 +1945,23 @@
         apply && apply(on);
       });
     }
-    toggleLayerButton("layerTraffic", "hide-traffic", null);
+    toggleLayerButton("layerTraffic", "hide-traffic", on => {
+      state.trafficLayerWanted = on;
+      if (on) {
+        setGooglePaneVisible(true);
+        enableGoogleTrafficLayer();
+      } else {
+        els.googleTrafficMap.style.display = "none";
+        if (document.getElementById("layerGoogle").classList.contains("on")) {
+          els.googleMapFrame.style.display = "block";
+        }
+      }
+    });
     toggleLayerButton("layerMilestones", "hide-milestones", null);
     toggleLayerButton("layerIntel", "hide-intel", null);
     toggleLayerButton("layerGoogle", null, on => {
-      document.getElementById("googleMapFrame").style.display = on ? "block" : "none";
-      document.getElementById("googleTrafficMap").style.display =
-        on && state.googleTrafficReady ? "block" : "none";
+      setGooglePaneVisible(on);
+      if (on && state.trafficLayerWanted) enableGoogleTrafficLayer();
     });
 
     if (!CanvasRenderingContext2D.prototype.roundRect) {
